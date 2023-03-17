@@ -1,0 +1,6 @@
+DEFAULT_PROMPT: 'Summarize the following voice memo: {transcript}'
+OPENAI_API_KEY:
+OPENAI_MODEL_SIZE: 1
+TRANSCRIPTS_DIR: ~/Documents
+VOICE_MEMO_INDEX_FILE: index.txt
+VOICE_MEMO_LOCATION: ~/Library/Application Support/com.apple.voicememos/Recordings
