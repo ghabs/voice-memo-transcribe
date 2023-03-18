@@ -9,10 +9,6 @@ from tkinter import ttk
 import yaml
 import threading
 
-from dotenv import load_dotenv
-load_dotenv()
-
-
 # Open the YAML file for reading
 with open('user_config.yaml', 'r') as file:
     # Load the contents of the file into a dictionary
