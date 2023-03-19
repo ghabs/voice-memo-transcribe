@@ -1,3 +1,4 @@
+import argparse
 from llm import LLMFormatter
 from transcriber import Transcriber
 import os
@@ -21,6 +22,12 @@ MODEL_SIZE = config['OPENAI_MODEL_SIZE']
 
 MODEL_SIZES = ["tiny.en", "base.en", "small.en", "medium.en", "large"]
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Voice Memo Transcriber with LLM support")
+    parser.add_argument("--check-directory", action="store_true",
+                        help="Check directory for new voice memos and transcribe them")
+    return parser.parse_args()
 
 def read_index_pairs(file_path):
     key_value_pairs = {}
@@ -32,11 +39,33 @@ def read_index_pairs(file_path):
                 key_value_pairs[key.strip()] = value.strip()
     return key_value_pairs
 
+def check_directory(transcriber, llm_formatter,):
+    # Get the list of existing transcripted files
+    index_file = config["VOICE_MEMO_INDEX_FILE"]
+    files = read_index_pairs(index_file)
 
-def transcribe_file(file_name):
-    # Do something with the file name
-    print("Transcribing file: " + file_name)
-    return file_name
+    # Get the current list of voice memo files in the directory
+    current_files = [f for f in os.listdir(os.path.expanduser(
+        config["VOICE_MEMO_LOCATION"])) if f.endswith(".m4a")]
+    results = 0
+    with open(index_file, "a") as ifile:
+        for file in current_files:
+            if file not in files:
+                try:
+                    # transcribe the voice memo
+                    transcript = transcriber.transcribe(os.path.join(
+                        os.path.expanduser(config["VOICE_MEMO_LOCATION"]), file))
+                    # format the transcript
+                    llm_transcript = llm_formatter.format(transcript)
+                    # save the transcript
+                    transcript_loc = save_transcript(
+                        file, transcript, llm_transcript)
+                    files[file] = transcript_loc
+                    ifile.write(f"{file}={files[file]}\n")
+                    results += 1
+                except Exception as e:
+                    print(e)
+    return results
 
 
 def save_transcript(file_name, transcript, llm_transcript):
@@ -168,32 +197,7 @@ class GUI(tk.Tk):
         pass
 
     def check_directory(self, transcriber, llm_formatter):
-        # Get the list of existing transcripted files
-        index_file = config["VOICE_MEMO_INDEX_FILE"]
-        files = read_index_pairs(index_file)
-
-        # Get the current list of voice memo files in the directory
-        current_files = [f for f in os.listdir(os.path.expanduser(
-            config["VOICE_MEMO_LOCATION"])) if f.endswith(".m4a")]
-        results = 0
-        with open(index_file, "a") as ifile:
-            for file in current_files:
-                print(file)
-                if file not in files:
-                    try:
-                        # transcribe the voice memo
-                        transcript = transcriber.transcribe(os.path.join(
-                            os.path.expanduser(config["VOICE_MEMO_LOCATION"]), file))
-                        # format the transcript
-                        llm_transcript = llm_formatter.format(transcript)
-                        # save the transcript
-                        transcript_loc = save_transcript(
-                            file, transcript, llm_transcript)
-                        files[file] = transcript_loc
-                        ifile.write(f"{file}={files[file]}\n")
-                        results += 1
-                    except Exception as e:
-                        print(e)
+        results = check_directory(transcriber, llm_formatter)
         self.progress_label.config(text=f"Transcribed {results} voice memos.")
 
     def run_function(self):
@@ -204,5 +208,13 @@ class GUI(tk.Tk):
 
 
 if __name__ == "__main__":
-    gui = GUI()
-    gui.mainloop()
+    args = parse_args()
+    if args.check_directory:
+        transcriber = Transcriber(MODEL_SIZES[config['OPENAI_MODEL_SIZE']])
+        llm_formatter = LLMFormatter(
+            oa_key=os.environ['OPENAI_API_KEY'], workflow=default_prompt)
+        results = check_directory(transcriber, llm_formatter)
+        print(f"Transcribed {results} voice memos.")
+    else:
+        gui = GUI()
+        gui.mainloop()
