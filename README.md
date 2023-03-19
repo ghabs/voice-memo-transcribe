@@ -4,6 +4,11 @@
 
 Transcribe apple voice memos and add annotations from an LLM call.
 
+#### Installation
+create a virtual environment and install the requirements.txt (I'll eventually get around to making a executable)
+
+#### Commands
+
 GUI
 ```
 python main.py
