@@ -2,6 +2,7 @@ import argparse
 from llm import LLMFormatter
 from transcriber import Transcriber
 import os
+import sys
 import tkinter as tk
 from tkinter import filedialog
 from tkinter.simpledialog import Dialog
@@ -10,8 +11,17 @@ from tkinter import ttk
 import yaml
 import threading
 
+
+# Check if the application is running as a bundled executable
+if getattr(sys, 'frozen', False):
+    base_dir = sys._MEIPASS
+else:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+yaml_file_path = os.path.join(base_dir, 'user_config.yaml')
+
 # Open the YAML file for reading
-with open('user_config.yaml', 'r') as file:
+with open(yaml_file_path, 'r') as file:
     # Load the contents of the file into a dictionary
     config = yaml.safe_load(file)
 
@@ -31,7 +41,7 @@ def parse_args():
 
 def read_index_pairs(file_path):
     key_value_pairs = {}
-    with open(file_path, "r") as file:
+    with open(os.path.join(base_dir, file_path), "r") as file:
         for line in file:
             line = line.strip()
             if line:
